@@ -38,6 +38,7 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
         'lens_model': image_data[0]['MakerNotes:LensModel'],
         'rate': xmp_data[0]['XMP:Rating'],
         'mtime': xmp_path.stat().st_mtime,
+        'changed': 'changed' in xmp_data[0].get('XMP:Subject', []),
     }
 
     return data
@@ -51,6 +52,7 @@ SCHEMA = {
         "lens_model",
         "rate",
         "mtime",
+        "changed",
     ),
 }
 
@@ -116,7 +118,7 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
         cur.executemany(
             "INSERT OR REPLACE INTO images "
             "VALUES(:name, :date, :focal_length, :model, :lens_model, :rate, "
-            ":mtime);",
+            ":mtime, :changed);",
             data,
         )
         db.commit()
