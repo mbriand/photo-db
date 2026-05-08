@@ -18,12 +18,21 @@ exif_helper = exiftool.ExifToolHelper()
 
 def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     """Get exif data of an image."""
-    image_path = xmp_path.with_suffix('')
+    try:
+        xmp_data = exif_helper.get_metadata(xmp_path.as_posix())
+    except exiftool.exceptions.ExifToolExecuteError:
+        return None
+
+    try:
+        image_name = xmp_data[0]['XMP:DerivedFrom']
+        image_path = xmp_path.with_name(image_name)
+    except KeyError:
+        image_path = xmp_path.with_suffix('')
+
     if not image_path.exists():
         return None
 
     try:
-        xmp_data = exif_helper.get_metadata(xmp_path.as_posix())
         image_data = exif_helper.get_metadata(image_path.as_posix())
     except exiftool.exceptions.ExifToolExecuteError:
         return None
@@ -31,7 +40,7 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     date = datetime.datetime.strptime(image_data[0]['EXIF:CreateDate'],
                                       '%Y:%m:%d %H:%M:%S')
     data = {
-        'name': image_path.name,
+        'name': xmp_path.name,
         'date': date,
         'focal_length': image_data[0]['EXIF:FocalLength'],
         'model': image_data[0]['EXIF:Model'],
@@ -103,7 +112,7 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
         for idx, file in enumerate(files):
             if idx > 0 and idx % 100 == 0:
                 logger.info("Scanned %s files in %s...", idx, folder)
-            prevmtime = mtimes.get(file.with_suffix("").name)
+            prevmtime = mtimes.get(file.name)
             if prevmtime and math.isclose(file.stat().st_mtime, prevmtime):
                 logger.debug("Skipping %s", file)
                 continue
