@@ -34,6 +34,8 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
         'name': image_path.name,
         'date': date,
         'focal_length': image_data[0]['EXIF:FocalLength'],
+        'model': image_data[0]['EXIF:Model'],
+        'lens_model': image_data[0]['MakerNotes:LensModel'],
         'rate': xmp_data[0]['XMP:Rating'],
         'mtime': xmp_path.stat().st_mtime,
     }
@@ -45,6 +47,8 @@ SCHEMA = {
         "name PRIMARY KEY",
         "date",
         "focal_length",
+        "model",
+        "lens_model",
         "rate",
         "mtime",
     ),
@@ -69,8 +73,10 @@ def create_db(output_file: pathlib.Path) -> sqlite3.Connection:
         fields = ", ".join(field_names)
         req = f"CREATE TABLE {table}({fields})"
 
-        if table in tables and tables[table] == req:
-            continue
+        if table in tables:
+            if tables[table] == req:
+                continue
+            cur.execute(f"DROP TABLE {table};")
 
         cur.execute(req)
 
@@ -109,7 +115,8 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
 
         cur.executemany(
             "INSERT OR REPLACE INTO images "
-            "VALUES(:name, :date, :focal_length, :rate, :mtime);",
+            "VALUES(:name, :date, :focal_length, :model, :lens_model, :rate, "
+            ":mtime);",
             data,
         )
         db.commit()
