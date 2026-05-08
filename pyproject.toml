@@ -1,0 +1,56 @@
+[project]
+name = "photo-db"
+version = "0.1.0"
+description = "A tool allowing to maintain a database of image metadata."
+authors = [
+    {name = "Mathieu Dubois-Briand", email = "mathieu.dubois-briand@hyprua.org"},
+]
+dependencies = [
+    'click',
+    'PyExifTool',
+]
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+[project.scripts]
+photo-db = "main:main"
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+extend-select = [
+    "ANN", # flake8-annotations
+    "B", # flake8-bugbear
+    "D", # pydocstyle
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "I", # isort
+    "LOG", # flake8-logging
+    "N", # pep8-naming
+    "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
+    "TC", # flake8-type-checking
+    "UP", # pyupgrade
+    ]
+ignore = [
+    "ANN002", # missing-type-args
+    "ANN003", # missing-type-kwargs
+    "ANN202", # missing-return-type-private-function
+    "ANN204", # missing-return-type-special-method
+    "D102", # undocumented-public-method
+    "D105", # undocumented-magic-method
+    "D107", # Missing docstring in __init__
+    "SIM103", # needless-bool
+    "UP045", # non-pep604-annotation-optional
+    ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.mypy]
+follow_untyped_imports = true
+
+[tool.pylint]
+disable = ["fixme"]
+
