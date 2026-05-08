@@ -7,7 +7,7 @@ import logging
 import math
 import pathlib
 import sqlite3
-from typing import Any
+from typing import Any, Optional
 
 import click
 import exiftool  # type: ignore
@@ -16,11 +16,17 @@ logger = logging.getLogger(__name__)
 
 exif_helper = exiftool.ExifToolHelper()
 
-def get_exif(xmp_path: pathlib.Path) -> dict[str, Any]:
+def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     """Get exif data of an image."""
     image_path = xmp_path.with_suffix('')
-    xmp_data = exif_helper.get_metadata(xmp_path.as_posix())
-    image_data = exif_helper.get_metadata(image_path.as_posix())
+    if not image_path.exists():
+        return None
+
+    try:
+        xmp_data = exif_helper.get_metadata(xmp_path.as_posix())
+        image_data = exif_helper.get_metadata(image_path.as_posix())
+    except exiftool.exceptions.ExifToolExecuteError:
+        return None
 
     date = datetime.datetime.strptime(image_data[0]['EXIF:CreateDate'],
                                       '%Y:%m:%d %H:%M:%S')
@@ -95,7 +101,12 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
                 continue
 
             logger.debug("Scanning %s", file)
-            data.append(get_exif(file))
+            exif_data = get_exif(file)
+            if exif_data:
+                data.append(exif_data)
+            else:
+                logger.warning("Failed to scan %s", file)
+
         cur.executemany(
             "INSERT OR REPLACE INTO images "
             "VALUES(:name, :date, :focal_length, :rate, :mtime);",
