@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 exif_helper = exiftool.ExifToolHelper()
 
+
 def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     """Get exif data of an image."""
     try:
@@ -24,10 +25,10 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
         return None
 
     try:
-        image_name = xmp_data[0]['XMP:DerivedFrom']
+        image_name = xmp_data[0]["XMP:DerivedFrom"]
         image_path = xmp_path.with_name(image_name)
     except KeyError:
-        image_path = xmp_path.with_suffix('')
+        image_path = xmp_path.with_suffix("")
 
     if not image_path.exists():
         return None
@@ -37,8 +38,9 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     except exiftool.exceptions.ExifToolExecuteError:
         return None
 
-    date = datetime.datetime.strptime(image_data[0]['EXIF:CreateDate'],
-                                      '%Y:%m:%d %H:%M:%S')
+    date = datetime.datetime.strptime(
+        image_data[0]["EXIF:CreateDate"], "%Y:%m:%d %H:%M:%S"
+    )
     data = {
         "name": xmp_path.as_posix(),
         "date": date,
@@ -51,6 +53,7 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     }
 
     return data
+
 
 SCHEMA = {
     "images": (
@@ -65,9 +68,11 @@ SCHEMA = {
     ),
 }
 
+
 def adapt_datetime_iso(val: datetime.datetime) -> str:
     """Adapt datetime.datetime to timezone-naive ISO 8601 date."""
     return val.replace(tzinfo=None).isoformat()
+
 
 def create_db(output_file: pathlib.Path) -> sqlite3.Connection:
     """Create and open databse."""
@@ -93,13 +98,14 @@ def create_db(output_file: pathlib.Path) -> sqlite3.Connection:
 
     return db
 
+
 def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
     """Scan data of modified files."""
     cur = db.cursor()
 
     req = "Select name, mtime FROM images;"
     mtime_res = cur.execute(req)
-    mtimes = {m['name']: m['mtime'] for m in mtime_res.fetchall()}
+    mtimes = {m["name"]: m["mtime"] for m in mtime_res.fetchall()}
 
     for folder in folders:
         if not folder.is_dir():
