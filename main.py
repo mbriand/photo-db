@@ -135,6 +135,38 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
 
     cur.close()
 
+
+def delete_removed_files(
+    db: sqlite3.Connection, folders: list[pathlib.Path]
+) -> None:
+    """Remove database entries for removed files."""
+    cur = db.cursor()
+
+    req = "Select name FROM images;"
+    dbfiles_res = cur.execute(req)
+    dbfiles = {f["name"] for f in dbfiles_res.fetchall()}
+
+    fsfiles = {
+        file.as_posix()
+        for folder in folders
+        if folder.is_dir()
+        for file in folder.glob("**/*.cr*.xmp", case_sensitive=False)
+    }
+
+    extra_files = dbfiles.difference(fsfiles)
+
+    if extra_files:
+        logger.info("Removing %s entries from database", len(extra_files))
+        logger.debug("Removed entries : %s", extra_files)
+        cur.executemany(
+            "DELETE FROM images WHERE name = ?;",
+            [[name] for name in extra_files],
+        )
+
+    cur.close()
+    db.commit()
+
+
 @click.command()
 @click.option(
     "--database",
@@ -154,6 +186,7 @@ def main(folders: list[pathlib.Path], database: pathlib.Path) -> None:
 
     db = create_db(database)
 
+    delete_removed_files(db, folders)
     scan_files(db, folders)
 
     db.commit()
