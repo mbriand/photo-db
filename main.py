@@ -40,14 +40,14 @@ def get_exif(xmp_path: pathlib.Path) -> Optional[dict[str, Any]]:
     date = datetime.datetime.strptime(image_data[0]['EXIF:CreateDate'],
                                       '%Y:%m:%d %H:%M:%S')
     data = {
-        'name': xmp_path.name,
-        'date': date,
-        'focal_length': image_data[0]['EXIF:FocalLength'],
-        'model': image_data[0]['EXIF:Model'],
-        'lens_model': image_data[0]['MakerNotes:LensModel'],
-        'rate': xmp_data[0]['XMP:Rating'],
-        'mtime': xmp_path.stat().st_mtime,
-        'changed': 'changed' in xmp_data[0].get('XMP:Subject', []),
+        "name": xmp_path.as_posix(),
+        "date": date,
+        "focal_length": image_data[0]["EXIF:FocalLength"],
+        "model": image_data[0]["EXIF:Model"],
+        "lens_model": image_data[0]["MakerNotes:LensModel"],
+        "rate": xmp_data[0]["XMP:Rating"],
+        "mtime": xmp_path.stat().st_mtime,
+        "changed": "changed" in xmp_data[0].get("XMP:Subject", []),
     }
 
     return data
@@ -112,7 +112,7 @@ def scan_files(db: sqlite3.Connection, folders: list[pathlib.Path]) -> None:
         for idx, file in enumerate(files):
             if idx > 0 and idx % 100 == 0:
                 logger.info("Scanned %s files in %s...", idx, folder)
-            prevmtime = mtimes.get(file.name)
+            prevmtime = mtimes.get(file.as_posix())
             if prevmtime and math.isclose(file.stat().st_mtime, prevmtime):
                 logger.debug("Skipping %s", file)
                 continue
